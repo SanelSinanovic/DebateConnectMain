@@ -1,0 +1,179 @@
+/* ...existing code... */
+
+body {
+  color: #222;
+  background: linear-gradient(270deg, #5e4fd9, #a478f3, #ff7e5f, #feb47b);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+  font-family: Arial, sans-serif;
+  margin: 0;
+}
+    
+    @keyframes gradientShift {
+     0% { background-position: 0% 50%; }
+     50% { background-position: 100% 50%; }
+     100% { background-position: 0% 50%; }
+}
+header {
+  text-align: center;
+  font-weight: bold;
+  font-size: 20px;
+  padding: 20px;
+  background-color: #f5edf8;
+  border-bottom: 2px solid #dcd0ff;
+}
+
+.chat-window {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  flex-wrap: wrap;
+}
+
+.video-panel {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: center;
+  width: 100%;
+}
+
+.video-box {
+  width: min(90vw, 400px);
+  height: min(90vw, 400px);
+  background-color: linear-gradient(270deg, #5e4fd9, #a478f3, #ff7e5f, #feb47b);;
+  border: 5px solid;
+  border-color: linear-gradient(270deg, #5e4fd9, #a478f3, #ff7e5f, #feb47b);
+  animation: gradientShift 8s ease infinite;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+    @keyframes gradientShift {
+     0% { background-position: 0% 50%; }
+     50% { background-position: 100% 50%; }
+     100% { background-position: 0% 50%; }
+}
+
+.video-stream {
+  width: 500%;
+  height: 100%;
+  object-fit: cover;
+  background: #eee;
+}
+
+.you-label {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.loading-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  font-size: 18px;
+  color: #666;
+}
+
+.spinner {
+  border: 4px solid #ccc;
+  border-top: 4px solid #5e4fd9;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.controls button {
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  padding: 10px 20px;
+  cursor: pointer;
+  color: white;
+}
+
+.mute-btn {
+  background-color: #09a8f7;
+}
+
+.end-btn {
+  background-color: #ef2b2b;
+}
+
+.report-btn {
+  background-color: #ff7b28;
+}
+
+/* Chat Styles */
+.chat-container {
+  max-width: 800px;
+  margin: 20px auto;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 15px;
+}
+
+.chat-box {
+  height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #f9f9f9;
+}
+
+.chat-message {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.chat-input-container {
+  display: flex;
+  gap: 10px;
+}
+
+.chat-input-container input {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.chat-input-container button {
+  background-color: #5e4fd9;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* ...keep the rest of your existing code if needed... */
