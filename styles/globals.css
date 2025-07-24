@@ -1,19 +1,20 @@
-/* ...existing code... */
-
 body {
-  color: #222;
-  background: linear-gradient(270deg, #5e4fd9, #a478f3, #ff7e5f, #feb47b);
-  background-size: 400% 400%;
-  animation: gradientShift 8s ease infinite;
   font-family: Arial, sans-serif;
   margin: 0;
+  background: linear-gradient(270deg, #5e4fd9, #a478f3, #ff7e5f, #feb47b);
+  background-size: 800% 800%;
+  animation: gradientShift 8s ease infinite;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-    
-    @keyframes gradientShift {
-     0% { background-position: 0% 50%; }
-     50% { background-position: 100% 50%; }
-     100% { background-position: 0% 50%; }
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
+
 header {
   text-align: center;
   font-weight: bold;
@@ -23,7 +24,7 @@ header {
   border-bottom: 2px solid #dcd0ff;
 }
 
-.chat-window {
+.container {
   display: flex;
   justify-content: center;
   gap: 20px;
@@ -31,21 +32,11 @@ header {
   flex-wrap: wrap;
 }
 
-.video-panel {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  justify-content: center;
-  width: 100%;
-}
-
 .video-box {
-  width: min(90vw, 400px);
-  height: min(90vw, 400px);
-  background-color: linear-gradient(270deg, #5e4fd9, #a478f3, #ff7e5f, #feb47b);;
-  border: 5px solid;
-  border-color: linear-gradient(270deg, #5e4fd9, #a478f3, #ff7e5f, #feb47b);
-  animation: gradientShift 8s ease infinite;
+  width: 400px;
+  height: 400px;
+  background-color: #eee;
+  border: 5px solid #5e4fd9;
   border-radius: 10px;
   overflow: hidden;
   position: relative;
@@ -53,14 +44,9 @@ header {
   justify-content: center;
   align-items: center;
 }
-    @keyframes gradientShift {
-     0% { background-position: 0% 50%; }
-     50% { background-position: 100% 50%; }
-     100% { background-position: 0% 50%; }
-}
 
 .video-stream {
-  width: 500%;
+  width: 100%;
   height: 100%;
   object-fit: cover;
   background: #eee;
@@ -84,6 +70,8 @@ header {
   flex-direction: column;
   font-size: 18px;
   color: #666;
+  width: 100%;
+  height: 100%;
 }
 
 .spinner {
@@ -117,19 +105,10 @@ header {
   color: white;
 }
 
-.mute-btn {
-  background-color: #09a8f7;
-}
+.mute-btn { background-color: #09a8f7; }
+.end-btn { background-color: #ef2b2b; }
+.report-btn { background-color: #ff7b28; }
 
-.end-btn {
-  background-color: #ef2b2b;
-}
-
-.report-btn {
-  background-color: #ff7b28;
-}
-
-/* Chat Styles */
 .chat-container {
   max-width: 800px;
   margin: 20px auto;
@@ -175,5 +154,3 @@ header {
   border-radius: 5px;
   cursor: pointer;
 }
-
-/* ...keep the rest of your existing code if needed... */

@@ -56,21 +56,25 @@ export default async function handler(
 ) {
   const { method, query } = req;
   const userId = query.userId as string;
+  const topic = query.topic as string;
 
   await dbConnect();
 
   switch (method) {
     case "GET":
       try {
+        // Only match rooms with the same topic
         const rooms = await Room.aggregate([
-          { $match: { status: "waiting" } },
+          { $match: { status: "waiting", topic } },
           { $sample: { size: 1 } },
         ]);
         if (rooms.length > 0) {
           const roomId = rooms[0]._id.toString();
-          await Room.findByIdAndUpdate(roomId, {
-            status: "chatting",
-          });
+          // Increment userCount and set status to "chatting"
+          await Room.findByIdAndUpdate(
+            roomId,
+            { $set: { status: "chatting" }, $inc: { userCount: 1 } }
+          );
           res.status(200).json({
             rooms,
             rtcToken: getRtcToken(roomId, userId),
@@ -84,8 +88,11 @@ export default async function handler(
       }
       break;
     case "POST":
+      // Store the topic in the new room
       const room = await Room.create({
         status: "waiting",
+        userCount: 1,
+        topic, // Save topic
       });
       res.status(200).json({
         room,
@@ -93,6 +100,57 @@ export default async function handler(
         rtmToken: getRtmToken(userId),
       });
       break;
+    case "DELETE": {
+      try {
+        const { roomId } = query;
+
+        // Delete specific room by ID
+        if (roomId) {
+          await Room.findByIdAndDelete(roomId);
+        }
+
+        // Delete all rooms with status "empty"
+        await Room.deleteMany({ status: "empty" });
+
+        res.status(200).json({ message: "Room(s) deleted" });
+      } catch (error) {
+        res.status(400).json({ error: (error as any).message });
+      }
+      break;
+    }
+    case "PUT": {
+      try {
+        const { roomId } = query;
+        if (roomId) {
+          const room = await Room.findById(roomId);
+          if (!room) {
+            res.status(404).json({ error: "Room not found" });
+            return;
+          }
+          // Decrement userCount
+          room.userCount = Math.max(0, (room.userCount || 1) - 1);
+          if (room.userCount === 0) {
+            room.status = "empty";
+            await room.save();
+            await Room.findByIdAndDelete(roomId);
+            res.status(200).json({ message: "Room set to empty and deleted" });
+          } else if (room.userCount === 1) {
+            room.status = "waiting";
+            await room.save();
+            res.status(200).json({ message: "Room set to waiting" });
+          } else if (room.userCount === 2) {
+            room.status = "chatting";
+            await room.save();
+            res.status(200).json({ message: "Room set to chatting" });
+          }
+        } else {
+          res.status(400).json({ error: "roomId is required" });
+        }
+      } catch (error) {
+        res.status(400).json({ error: (error as any).message });
+      }
+      break;
+    }
     default:
       res.status(400).json("no method for this endpoint");
       break;

@@ -1,319 +1,142 @@
-import Head from "next/head";
-import React, { useEffect, useRef, useState } from "react";
-import styles from "../styles/Home.module.css";
-import { RtmChannel } from "agora-rtm-sdk";
-import {
-  ICameraVideoTrack,
-  IRemoteVideoTrack,
-  IAgoraRTCClient,
-  IRemoteAudioTrack,
-} from "agora-rtc-sdk-ng";
+import { useRouter } from "next/router";
+import { useState } from "react";
 
-type TCreateRoomResponse = {
-  room: Room;
-  rtcToken: string;
-  rtmToken: string;
-};
+const TOPICS = [
+  "Climate Change Policy",
+  "Universal Basic Income",
+  "AI Regulation",
+  "Online Privacy",
+  "Renewable Energy",
+  "Education Reform",
+];
 
-type TGetRandomRoomResponse = {
-  rtcToken: string;
-  rtmToken: string;
-  rooms: Room[];
-};
+export default function Landing() {
+  const router = useRouter();
+  const [topic, setTopic] = useState(TOPICS[0]);
 
-type Room = {
-  _id: string;
-  status: string;
-};
-
-type TMessage = {
-  userId: string;
-  message: string | undefined;
-};
-
-function createRoom(userId: string): Promise<TCreateRoomResponse> {
-  return fetch(`/api/rooms?userId=${userId}`, {
-    method: "POST",
-  }).then((response) => response.json());
-}
-
-function getRandomRoom(userId: string): Promise<TGetRandomRoomResponse> {
-  return fetch(`/api/rooms?userId=${userId}`).then((response) =>
-    response.json()
-  );
-}
-
-function setRoomToWaiting(roomId: string) {
-  return fetch(`/api/rooms/${roomId}`, { method: "PUT" }).then((response) =>
-    response.json()
-  );
-}
-
-export const VideoPlayer = ({
-  videoTrack,
-  style,
-}: {
-  videoTrack: IRemoteVideoTrack | ICameraVideoTrack;
-  style: object;
-}) => {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const playerRef = ref.current;
-    if (!videoTrack) return;
-    if (!playerRef) return;
-
-    videoTrack.play(playerRef);
-
-    return () => {
-      videoTrack.stop();
-    };
-  }, [videoTrack]);
-
-  return <div ref={ref} style={style}></div>;
-};
-
-async function connectToAgoraRtc(
-  roomId: string,
-  userId: string,
-  onVideoConnect: any,
-  onWebcamStart: any,
-  onAudioConnect: any,
-  token: string
-) {
-  const { default: AgoraRTC } = await import("agora-rtc-sdk-ng");
-
-  const client = AgoraRTC.createClient({
-    mode: "rtc",
-    codec: "vp8",
-  });
-
-  await client.join(
-    process.env.NEXT_PUBLIC_AGORA_APP_ID!,
-    roomId,
-    token,
-    userId
-  );
-
-  client.on("user-published", (themUser, mediaType) => {
-    client.subscribe(themUser, mediaType).then(() => {
-      if (mediaType === "video") {
-        onVideoConnect(themUser.videoTrack);
-      }
-      if (mediaType === "audio") {
-        onAudioConnect(themUser.audioTrack);
-        themUser.audioTrack?.play();
-      }
-    });
-  });
-
-  const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
-  onWebcamStart(tracks[1]);
-  await client.publish(tracks);
-
-  return { tracks, client };
-}
-
-async function connectToAgoraRtm(
-  roomId: string,
-  userId: string,
-  onMessage: (message: TMessage) => void,
-  token: string
-) {
-  const { default: AgoraRTM } = await import("agora-rtm-sdk");
-  const client = AgoraRTM.createInstance(process.env.NEXT_PUBLIC_AGORA_APP_ID!);
-  await client.login({
-    uid: userId,
-    token,
-  });
-  const channel = await client.createChannel(roomId);
-  await channel.join();
-  channel.on("ChannelMessage", (message, userId) => {
-    onMessage({
-      userId,
-      message: message.text,
-    });
-  });
-
-  return {
-    channel,
+  const handleJoin = () => {
+    router.push(`/debate?topic=${encodeURIComponent(topic)}`);
   };
-}
-
-export default function Home() {
-  const [userId] = useState(parseInt(`${Math.random() * 1e6}`) + "");
-  const [room, setRoom] = useState<Room | undefined>();
-  const [messages, setMessages] = useState<TMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [themVideo, setThemVideo] = useState<IRemoteVideoTrack>();
-  const [myVideo, setMyVideo] = useState<ICameraVideoTrack>();
-  const [themAudio, setThemAudio] = useState<IRemoteAudioTrack>();
-  const channelRef = useRef<RtmChannel>(null);
-  const rtcClientRef = useRef<IAgoraRTCClient>(null);
-
-  function handleNextClick() {
-    connectToARoom();
-  }
-
-  function handleStartChattingClicked() {
-    connectToARoom();
-  }
-
-  async function handleSubmitMessage(e: React.FormEvent) {
-    e.preventDefault();
-    await channelRef.current?.sendMessage({
-      text: input,
-    });
-    setMessages((cur) => [
-      ...cur,
-      {
-        userId,
-        message: input,
-      },
-    ]);
-    setInput("");
-  }
-
-  async function connectToARoom() {
-    setThemAudio(undefined);
-    setThemVideo(undefined);
-    setMyVideo(undefined);
-    setMessages([]);
-
-    if (channelRef.current) {
-      await channelRef.current.leave();
-    }
-
-    if (rtcClientRef.current) {
-      rtcClientRef.current.leave();
-    }
-
-    const { rooms, rtcToken, rtmToken } = await getRandomRoom(userId);
-
-    if (room) {
-      setRoomToWaiting(room._id);
-    }
-
-    if (rooms.length > 0) {
-      setRoom(rooms[0]);
-      const { channel } = await connectToAgoraRtm(
-        rooms[0]._id,
-        userId,
-        (message: TMessage) => setMessages((cur) => [...cur, message]),
-        rtmToken
-      );
-      channelRef.current = channel;
-
-      const { tracks, client } = await connectToAgoraRtc(
-        rooms[0]._id,
-        userId,
-        (themVideo: IRemoteVideoTrack) => setThemVideo(themVideo),
-        (myVideo: ICameraVideoTrack) => setMyVideo(myVideo),
-        (themAudio: IRemoteAudioTrack) => setThemAudio(themAudio),
-        rtcToken
-      );
-      rtcClientRef.current = client;
-    } else {
-      const { room, rtcToken, rtmToken } = await createRoom(userId);
-      setRoom(room);
-      const { channel } = await connectToAgoraRtm(
-        room._id,
-        userId,
-        (message: TMessage) => setMessages((cur) => [...cur, message]),
-        rtmToken
-      );
-      channelRef.current = channel;
-
-      const { tracks, client } = await connectToAgoraRtc(
-        room._id,
-        userId,
-        (themVideo: IRemoteVideoTrack) => setThemVideo(themVideo),
-        (myVideo: ICameraVideoTrack) => setMyVideo(myVideo),
-        (themAudio: IRemoteAudioTrack) => setThemAudio(themAudio),
-        rtcToken
-      );
-      rtcClientRef.current = client;
-    }
-  }
-
-  function convertToYouThem(message: TMessage) {
-    return message.userId === userId ? "You" : "Them";
-  }
-
-  const isChatting = room!!;
 
   return (
     <>
-      <Head>
-        <title>Create Next App</title>
-        <meta name="description" content="Generated by create next app" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <main className={styles.main}>
-        {isChatting ? (
-          <>
-            {room._id}
-            <button onClick={handleNextClick}>next</button>
-            <div className="chat-window">
-              <div className="video-panel">
-                <div className="video-box">
-                  {myVideo ? (
-                    <>
-                      <VideoPlayer
-                        style={{ width: "100%", height: "100%" }}
-                        videoTrack={myVideo}
-                      />
-                      <div className="you-label">You</div>
-                    </>
-                  ) : (
-                    <div className="loading-box">
-                      <div className="spinner"></div>
-                      <p>Loading your camera...</p>
-                    </div>
-                  )}
-                </div>
-                <div className="video-box">
-                  {themVideo ? (
-                    <VideoPlayer
-                      style={{ width: "100%", height: "100%" }}
-                      videoTrack={themVideo}
-                    />
-                  ) : (
-                    <div className="loading-box">
-                      <div className="spinner"></div>
-                      <p>Waiting for Match...</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="chat-panel">
-                <ul>
-                  {messages.map((message, idx) => (
-                    <li key={idx}>
-                      {convertToYouThem(message)} - {message.message}
-                    </li>
-                  ))}
-                </ul>
-
-                <form onSubmit={handleSubmitMessage}>
-                  <input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                  ></input>
-                  <button>submit</button>
-                </form>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <button onClick={handleStartChattingClicked}>Start Chatting</button>
-          </>
-        )}
-      </main>
+      <style jsx global>{`
+        .animated-bg {
+          min-height: 100vh;
+          width: 100vw;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #010a1a 0%, #0b3d79 40%, #3a6ea5 60%, #010a1a 100%);
+          background-size: 200% 200%;
+          animation: gradientBG 12s ease-in-out infinite;
+          position: relative;
+        }
+        .debate-title {
+          position: absolute;
+          top: 32px;
+          left: 40px;
+          font-family: 'Segoe UI', 'Arial Rounded MT Bold', Arial, sans-serif;
+          font-size: 2.2rem;
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: 2px;
+          text-shadow: 0 2px 12px #010a1a88;
+          user-select: none;
+          z-index: 10;
+        }
+        @keyframes gradientBG {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+      `}</style>
+      <div className="animated-bg">
+        <div className="debate-title">Debate Connect</div>
+        <div
+          style={{
+            border: "3px solid #fff",
+            borderRadius: 24,
+            boxShadow: "0 4px 32px rgba(94,79,217,0.08)",
+            padding: "40px 32px",
+            maxWidth: 400,
+            textAlign: "center",
+            background: "transparent",
+            backdropFilter: "blur(0px)", // optional: remove if you don't want any blur
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: 28, color: "#fff" }}>
+            Welcome to the Debate Room
+          </h1>
+          <p style={{ color: "#fff", margin: "24px 0 32px" }}>
+            Join a live video debate on <b>{topic}</b> with a random partner.
+          </p>
+          <div style={{ position: "relative", width: "100%", marginBottom: 24 }}>
+            <select
+              value={topic}
+              onChange={e => setTopic(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                paddingRight: "36px", // space for arrow
+                fontSize: 16,
+                borderRadius: 6,
+                border: "1px solid #fff",
+                outline: "none",
+                background: "#0b1630",
+                color: "#fff",
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+              }}
+            >
+              {TOPICS.map(t => (
+                <option key={t} value={t} style={{ background: "#0b1630", color: "#fff" }}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <span
+              style={{
+                pointerEvents: "none",
+                position: "absolute",
+                right: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: 18,
+                color: "#fff",
+                opacity: 0.7,
+              }}
+            >
+              ▼
+            </span>
+          </div>
+          <button
+            onClick={handleJoin}
+            style={{
+              background: "linear-gradient(135deg, #010a1a 0%, #0b3d79 25%, #3a6ea5 50%, #60a5fa 75%, #010a1a 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 20,
+              padding: "15px 40px",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(94,79,217,0.12)",
+              marginTop: 16,
+              marginBottom: 16,
+            }}
+          >
+            Join Debate
+          </button>
+        </div>
+      </div>
     </>
   );
 }
