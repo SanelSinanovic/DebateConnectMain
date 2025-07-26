@@ -326,6 +326,31 @@ const topic = typeof router.query.topic === "string" ? router.query.topic : "Deb
           background: linear-gradient(135deg, #010a1a 0%, #0b3d79 25%, #3a6ea5 50%, #60a5fa 75%, #010a1a 100%);
           background-size: 600% 600%;
           animation: gradientBG 24s ease-in-out infinite;
+          position: relative;
+          overflow: hidden;
+        }
+        .animated-bg::before,
+        .animated-bg::after {
+          content: "";
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 400px;
+          height: 80%;
+          background-image: url('/image.png');
+          background-repeat: no-repeat;
+          background-size: contain;
+          opacity: 0.70;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .animated-bg::before {
+          left: 0;
+          background-position: left center;
+        }
+        .animated-bg::after {
+          right: 0;
+          background-position: right center;
         }
         @keyframes gradientBG {
           0% {
